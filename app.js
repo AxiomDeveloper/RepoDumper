@@ -1,157 +1,144 @@
 const $ = (id) => document.getElementById(id);
 
 const state = {
-  owner: "", repo: "", branch: "",
-  tree: [], files: [], 
-  fileCache: new Map(),
-  treeText: ""
+    tree: [], files: [], 
+    meta: null,
+    fileCache: new Map(),
+    treeText: ""
 };
 
 const els = {
-  token: $("token"), repoUrl: $("repoUrl"), branch: $("branch"), maxKb: $("maxKb"),
-  exclude: $("exclude"), btnLoad: $("btnLoad"), btnDump: $("btnDump"),
-  statusPill: $("statusPill"), statusText: $("statusText"), progressBar: $("progressBar"),
-  tree: $("tree"), treeSearch: $("treeSearch"), dumpOut: $("dumpOut"),
-  filePreview: $("filePreview"), activePath: $("activePath"), fileContent: $("fileContent"),
-  btnCopyDump: $("btnCopyDump"), toast: $("toast")
+    token: $("token"), repoUrl: $("repoUrl"), branch: $("branch"),
+    btnLoad: $("btnLoad"), btnDump: $("btnDump"),
+    statusPill: $("statusPill"), statusText: $("statusText"), progressBar: $("progressBar"),
+    tree: $("tree"), dumpOut: $("dumpOut"), toast: $("toast")
 };
 
 function init() {
-  // Navigation
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => switchView(btn.dataset.target));
-  });
+    // Navigation Logic
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.body.dataset.view = btn.dataset.target;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
 
-  // Action listeners
-  els.btnLoad.addEventListener("click", onLoadRepo);
-  els.btnDump.addEventListener("click", onDumpAll);
-  els.treeSearch.addEventListener("input", renderTree);
-  $("btnClosePreview").addEventListener("click", () => els.filePreview.classList.remove("active"));
-  $("btnCopyFile").addEventListener("click", () => copyToClipboard(els.fileContent.textContent));
-  els.btnCopyDump.addEventListener("click", () => copyToClipboard(els.dumpOut.value));
-
-  // Persistence
-  els.token.value = localStorage.getItem("rd_token") || "";
-  els.repoUrl.value = localStorage.getItem("rd_repoUrl") || "";
-
-  // Theme
-  $("btnTheme").addEventListener("click", () => {
-    const isLight = document.documentElement.dataset.theme === "light";
-    document.documentElement.dataset.theme = isLight ? "dark" : "light";
-  });
-}
-
-function switchView(view) {
-  document.body.dataset.view = view;
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.target === view));
+    els.btnLoad.addEventListener("click", onLoadRepo);
+    els.btnDump.addEventListener("click", onCompileDump);
+    $("btnClosePreview").addEventListener("click", () => $("filePreview").classList.remove("active"));
+    $("btnCopyDump").addEventListener("click", () => copyText(els.dumpOut.value));
 }
 
 async function fetchGH(path) {
-  const token = els.token.value.trim();
-  const headers = { "Accept": "application/vnd.github+json" };
-  if(token) {
-    headers["Authorization"] = `Bearer ${token}`;
-    localStorage.setItem("rd_token", token);
-  }
-  const r = await fetch(`https://api.github.com/${path}`, { headers });
-  if(!r.ok) throw new Error(r.statusText);
-  return r.json();
+    const h = { "Accept": "application/vnd.github+json" };
+    if(els.token.value) h["Authorization"] = `Bearer ${els.token.value.trim()}`;
+    const r = await fetch(`https://api.github.com/${path}`, { headers: h });
+    if(!r.ok) throw new Error(r.statusText);
+    return r.json();
 }
 
 async function onLoadRepo() {
-  try {
-    const raw = els.repoUrl.value.trim();
-    let parts = raw.replace("https://github.com/", "").split("/").filter(Boolean);
-    if(parts.length < 2) throw new Error("Format: owner/repo");
-    
-    state.owner = parts[0];
-    state.repo = parts[1].replace(".git", "");
-    localStorage.setItem("rd_repoUrl", raw);
+    try {
+        const raw = els.repoUrl.value.trim();
+        let parts = raw.replace("https://github.com/", "").split("/").filter(Boolean);
+        if(parts.length < 2) throw new Error("Format: owner/repo");
+        
+        const owner = parts[0], repo = parts[1].replace(".git", "");
+        
+        updateStatus("Syncing", "Fetching Metadata...", 30);
+        state.meta = await fetchGH(`repos/${owner}/${repo}`);
+        const branch = els.branch.value || state.meta.default_branch;
 
-    updateProgress("Connecting", 30);
-    const repoInfo = await fetchGH(`repos/${state.owner}/${state.repo}`);
-    state.branch = els.branch.value || repoInfo.default_branch;
+        updateStatus("Indexing", "Recursive Tree Mapping...", 60);
+        const brData = await fetchGH(`repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`);
+        const treeData = await fetchGH(`repos/${owner}/${repo}/git/trees/${brData.commit.sha}?recursive=1`);
+        
+        state.tree = treeData.tree;
+        processData(owner, repo, branch);
+        renderTree();
 
-    updateProgress("Reading Tree", 60);
-    const branchInfo = await fetchGH(`repos/${state.owner}/${state.repo}/branches/${encodeURIComponent(state.branch)}`);
-    const treeData = await fetchGH(`repos/${state.owner}/${state.repo}/git/trees/${branchInfo.commit.sha}?recursive=1`);
-    
-    state.tree = treeData.tree;
-    processTree();
-    renderTree();
-
-    $("displayRepoName").textContent = state.repo;
-    $("displayBranchName").textContent = state.branch;
-    els.btnDump.disabled = false;
-    updateProgress("Ready", 100);
-    switchView("explorer");
-  } catch (e) {
-    updateProgress("Error", 0, e.message);
-  }
+        $("displayRepoName").textContent = repo;
+        $("displayBranchName").textContent = branch;
+        updateStatus("Ready", `${state.files.length} files found.`, 100);
+        
+        // Auto-switch to Explorer on success
+        document.querySelector('[data-target="explorer"]').click();
+    } catch (e) {
+        updateStatus("Error", e.message, 0);
+    }
 }
 
-function processTree() {
-  const ex = els.exclude.value.toLowerCase().split(',').map(s => s.trim());
-  state.files = state.tree.filter(n => n.type === "blob" && !ex.some(e => n.path.toLowerCase().includes(e)));
-  state.treeText = state.tree.map(n => `${"  ".repeat(n.path.split("/").length-1)}- ${n.path.split("/").pop()}${n.type === 'tree' ? '/' : ''}`).join("\n");
+function processData(owner, repo, branch) {
+    const ex = $("exclude").value.toLowerCase().split(',').map(s => s.trim());
+    state.files = state.tree.filter(n => n.type === 'blob' && !ex.some(p => n.path.toLowerCase().includes(p)));
+    
+    // Build visualized tree text
+    state.treeText = state.tree
+        .filter(n => !ex.some(p => n.path.toLowerCase().includes(p)))
+        .map(n => `${"  ".repeat(n.path.split("/").length-1)}- ${n.path.split("/").pop()}${n.type==='tree'?'/':''}`)
+        .join("\n");
 }
 
 function renderTree() {
-  const q = els.treeSearch.value.toLowerCase();
-  els.tree.innerHTML = "";
-  state.files.forEach(f => {
-    if(q && !f.path.toLowerCase().includes(q)) return;
-    const d = document.createElement("div");
-    d.className = "node";
-    d.innerHTML = `📄 ${f.path}`;
-    d.onclick = () => openFile(f);
-    els.tree.appendChild(d);
-  });
+    els.tree.innerHTML = "";
+    state.files.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'native-input'; // Reuse styling
+        div.style.marginBottom = '5px';
+        div.innerHTML = `📄 <small>${f.path}</small>`;
+        div.onclick = () => openFile(f);
+        els.tree.appendChild(div);
+    });
 }
 
 async function openFile(file) {
-  els.filePreview.classList.add("active");
-  els.fileContent.textContent = "Loading file...";
-  try {
-    const data = await fetchGH(`repos/${state.owner}/${state.repo}/git/blobs/${file.sha}`);
-    const content = atob(data.content.replace(/\n/g, ''));
-    els.fileContent.textContent = content;
-    els.activePath.textContent = file.path;
-  } catch(e) { els.fileContent.textContent = "Error loading."; }
-}
-
-async function onDumpAll() {
-  switchView("output");
-  els.dumpOut.value = "Working... check progress bar.";
-  let out = `# REPO: ${state.owner}/${state.repo}\n## TREE\n${state.treeText}\n\n## FILES\n`;
-  const limit = (parseInt(els.maxKb.value) || 512) * 1024;
-
-  for(let i=0; i < state.files.length; i++) {
-    const f = state.files[i];
-    updateProgress("Dumping", Math.floor((i/state.files.length)*100));
-    if(f.size > limit) continue;
+    $("filePreview").classList.add("active");
+    $("fileContent").textContent = "Decoding...";
     try {
-      const data = await fetchGH(`repos/${state.owner}/${state.repo}/git/blobs/${f.sha}`);
-      const content = atob(data.content.replace(/\n/g, ''));
-      out += `\n---\n### ${f.path}\n\`\`\`\n${content}\n\`\`\`\n`;
-    } catch(e) {}
-  }
-  els.dumpOut.value = out;
-  els.btnCopyDump.disabled = false;
-  updateProgress("Done", 100);
+        const data = await fetchGH(`repos/${state.meta.owner.login}/${state.meta.name}/git/blobs/${file.sha}`);
+        const content = atob(data.content.replace(/\n/g, ''));
+        $("fileContent").textContent = content;
+        $("activePath").textContent = file.path;
+    } catch(e) { $("fileContent").textContent = "Error loading."; }
 }
 
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    els.toast.classList.add("show");
-    setTimeout(() => els.toast.classList.remove("show"), 2000);
-  });
+async function onCompileDump() {
+    updateStatus("Compiling", "Gathering selected data...", 50);
+    let dump = "";
+
+    if($("optMeta").checked) {
+        dump += `--- REPO METADATA ---\nRepo: ${state.meta.full_name}\nDesc: ${state.meta.description}\n\n`;
+    }
+
+    if($("optTree").checked) {
+        dump += `--- STRUCTURE ---\n${state.treeText}\n\n`;
+    }
+
+    if($("optFiles").checked) {
+        dump += `--- CONTENTS ---\n`;
+        for(let f of state.files) {
+            const data = await fetchGH(`repos/${state.meta.owner.login}/${state.meta.name}/git/blobs/${f.sha}`);
+            const content = atob(data.content.replace(/\n/g, ''));
+            dump += `\n---\nFILE: ${f.path}\n\`\`\`\n${content}\n\`\`\`\n`;
+        }
+    }
+
+    els.dumpOut.value = dump;
+    updateStatus("Ready", "Payload Compiled.", 100);
 }
 
-function updateProgress(pill, pct, text) {
-  els.statusPill.textContent = pill;
-  els.progressBar.style.width = `${pct}%`;
-  if(text) els.statusText.textContent = text;
+function copyText(txt) {
+    navigator.clipboard.writeText(txt).then(() => {
+        els.toast.classList.add("show");
+        setTimeout(() => els.toast.classList.remove("show"), 2000);
+    });
+}
+
+function updateStatus(pill, text, pct) {
+    els.statusPill.textContent = pill;
+    els.statusText.textContent = text;
+    els.progressBar.style.width = `${pct}%`;
 }
 
 init();
