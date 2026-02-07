@@ -1,85 +1,123 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-  <title>RepoDumper Pro</title>
-  <meta name="theme-color" content="#0b0f19" />
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RepoDumper Pro</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body data-view="config">
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">RD</div>
-      <div class="brand-text">
-        <div class="title" id="displayRepoName">Repo Dumper</div>
-        <div class="subtitle" id="displayBranchName">Ready to connect</div>
-      </div>
+    <header class="glass-header">
+        <div class="header-inner">
+            <div class="logo-group">
+                <span class="logo-icon">⚡</span>
+                <div>
+                    <h1 id="displayRepoName">RepoDumper</h1>
+                    <p id="displayBranchName">Not Connected</p>
+                </div>
+            </div>
+            <button id="btnTheme" class="icon-btn">🌗</button>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <section id="view-config" class="view">
+            <div class="glass-card">
+                <label class="native-label">Authentication</label>
+                <input id="token" type="password" placeholder="GitHub Token (Optional)" class="native-input">
+                
+                <label class="native-label">Target Repository</label>
+                <input id="repoUrl" type="url" placeholder="owner/repo" class="native-input">
+                
+                <div class="input-row">
+                    <div class="input-half">
+                        <label class="native-label">Branch</label>
+                        <select id="branch" class="native-select">
+                            <option value="">Default</option>
+                        </select>
+                    </div>
+                    <div class="input-half">
+                        <label class="native-label">Limit (KB)</label>
+                        <input id="maxKb" type="number" value="512" class="native-input">
+                    </div>
+                </div>
+
+                <label class="native-label">Exclusions</label>
+                <input id="exclude" type="text" value="node_modules, .git, dist, .png, .jpg" class="native-input">
+
+                <button id="btnLoad" class="btn-primary">Fetch Repository</button>
+                
+                <div class="status-glass">
+                    <div class="status-text-row">
+                        <span id="statusPill" class="pill">Idle</span>
+                        <span id="statusText">Awaiting input...</span>
+                    </div>
+                    <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-explorer" class="view">
+            <div class="explorer-tools">
+                <input id="treeSearch" type="text" placeholder="Search files..." class="glass-search">
+                <button id="btnCopyTree" class="btn-sm">Copy Tree</button>
+            </div>
+            <div id="tree" class="native-tree"></div>
+        </section>
+
+        <section id="view-output" class="view">
+            <div class="glass-card dump-compiler">
+                <h3>Compiler Settings</h3>
+                <p class="sub">Toggle items to include in the AI payload</p>
+                
+                <div class="toggle-list">
+                    <label class="native-toggle">
+                        <span>Include Repo Metadata</span>
+                        <input type="checkbox" id="optMeta" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <label class="native-toggle">
+                        <span>Include File Tree</span>
+                        <input type="checkbox" id="optTree" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <label class="native-toggle">
+                        <span>Include File Contents</span>
+                        <input type="checkbox" id="optFiles" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button id="btnDump" class="btn-primary">Compile All for AI</button>
+            </div>
+
+            <div class="output-wrapper glass">
+                <div class="output-header">
+                    <span>Generated Payload</span>
+                    <button id="btnCopyDump" class="btn-sm btn-accent">Copy All Content</button>
+                </div>
+                <textarea id="dumpOut" readonly placeholder="Output will appear here..."></textarea>
+            </div>
+        </section>
+    </main>
+
+    <nav class="glass-nav">
+        <button class="nav-btn active" data-target="config"><i>⚙️</i><span>Setup</span></button>
+        <button class="nav-btn" data-target="explorer"><i>📂</i><span>Files</span></button>
+        <button class="nav-btn" data-target="output"><i>📄</i><span>Dump</span></button>
+    </nav>
+
+    <div id="filePreview" class="drawer glass">
+        <div class="drawer-header">
+            <button id="btnClosePreview" class="icon-btn">✕</button>
+            <span id="activePath">Preview</span>
+            <button id="btnCopyFile" class="icon-btn">📋</button>
+        </div>
+        <pre><code id="fileContent"></code></pre>
     </div>
-    <button id="btnTheme" class="btn-icon">🌗</button>
-  </header>
 
-  <nav class="bottom-nav">
-    <button class="nav-item active" data-target="config"><i>⚙️</i><span>Config</span></button>
-    <button class="nav-item" data-target="explorer"><i>📂</i><span>Explorer</span></button>
-    <button class="nav-item" data-target="output"><i>📄</i><span>Output</span></button>
-  </nav>
+    <div id="toast" class="toast">Copied!</div>
 
-  <main class="viewport">
-    <section id="view-config" class="view-section">
-      <div class="card">
-        <h3>Repository Access</h3>
-        <div class="grid">
-          <input id="token" type="password" placeholder="GitHub Token (PAT)" />
-          <input id="repoUrl" type="url" placeholder="owner/repo" />
-          <div class="row">
-            <select id="branch"><option value="">Default Branch</option></select>
-            <input id="maxKb" type="number" value="512" placeholder="KB Limit" />
-          </div>
-          <input id="exclude" type="text" placeholder="Exclude: node_modules, dist, .git" />
-        </div>
-        <button id="btnLoad" class="btn primary full-width">Connect & Load</button>
-        <div class="status-box">
-          <div class="status-header">
-            <span class="pill" id="statusPill">Idle</span>
-            <span id="statusText">Awaiting input...</span>
-          </div>
-          <div class="progress"><div class="bar" id="progressBar"></div></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="view-explorer" class="view-section">
-      <div class="explorer-container">
-        <input id="treeSearch" class="search-input" type="text" placeholder="Search files..." />
-        <div id="tree" class="tree-view"></div>
-      </div>
-      <div class="file-overlay" id="filePreview">
-        <div class="preview-header">
-          <button id="btnClosePreview" class="btn-icon">✕</button>
-          <span id="activePath">File Preview</span>
-          <button id="btnCopyFile" class="btn-icon">📋</button>
-        </div>
-        <pre class="code-block"><code id="fileContent"></code></pre>
-      </div>
-    </section>
-
-    <section id="view-output" class="view-section">
-      <div class="output-card">
-        <div class="output-header">
-          <h3>Full AI Dump</h3>
-          <button id="btnCopyDump" class="btn primary sm" disabled>Copy All Content</button>
-        </div>
-        <textarea id="dumpOut" class="dump-area" readonly placeholder="Output will appear here..."></textarea>
-      </div>
-    </section>
-  </main>
-
-  <button id="btnDump" class="fab" disabled><span class="fab-icon">⚡</span></button>
-
-  <div id="toast" class="toast">Copied to clipboard!</div>
-
-  <script src="./app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
