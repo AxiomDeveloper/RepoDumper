@@ -2,119 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Repo Dumper (GitHub Pages)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <title>RepoDumper Pro</title>
   <meta name="theme-color" content="#0b0f19" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
+<body data-view="config">
   <header class="topbar">
     <div class="brand">
       <div class="logo">RD</div>
       <div class="brand-text">
-        <div class="title">Repo Dumper</div>
-        <div class="subtitle">Paste token + repo URL → tree + full AI dump</div>
+        <div class="title" id="displayRepoName">Repo Dumper</div>
+        <div class="subtitle" id="displayBranchName">Ready to dump</div>
       </div>
     </div>
-    <div class="top-actions">
-      <button id="btnTheme" class="btn ghost" type="button" aria-label="Toggle theme">🌗</button>
-      <button id="btnReset" class="btn ghost" type="button">Reset</button>
-    </div>
+    <button id="btnTheme" class="btn-icon" aria-label="Toggle theme">🌗</button>
   </header>
 
-  <main class="layout">
-    <section class="card">
-      <h2>Connect</h2>
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-target="config">
+      <i>⚙️</i><span>Config</span>
+    </button>
+    <button class="nav-item" data-target="explorer">
+      <i>📂</i><span>Explorer</span>
+    </button>
+    <button class="nav-item" data-target="output">
+      <i>📄</i><span>Output</span>
+    </button>
+  </nav>
 
-      <div class="grid">
-        <label class="field">
-          <span>GitHub token (PAT)</span>
-          <input id="token" type="password" placeholder="ghp_… or github_pat_…" autocomplete="off" inputmode="text" />
-          <small>Tip: Use a fine-scoped token. For private repos: repo read access.</small>
-        </label>
-
-        <label class="field">
-          <span>Repo URL</span>
-          <input id="repoUrl" type="url" placeholder="https://github.com/owner/repo" inputmode="url" />
-          <small>Also accepts: owner/repo</small>
-        </label>
-
-        <div class="row">
-          <label class="field">
-            <span>Branch</span>
-            <select id="branch">
-              <option value="">Auto (default)</option>
-            </select>
-            <small>Loads tree for selected branch.</small>
-          </label>
-
-          <label class="field">
-            <span>Max file size (KB)</span>
-            <input id="maxKb" type="number" min="1" step="1" value="512" inputmode="numeric" />
-            <small>Files larger than this are skipped in “Dump All”.</small>
-          </label>
+  <main class="viewport">
+    <section id="view-config" class="view-section">
+      <div class="card">
+        <h2>Connection Settings</h2>
+        <div class="grid">
+          <div class="field">
+            <input id="token" type="password" placeholder="GitHub Token (PAT)" />
+          </div>
+          <div class="field">
+            <input id="repoUrl" type="url" placeholder="owner/repo or URL" />
+          </div>
+          <div class="row">
+            <select id="branch"><option value="">Default Branch</option></select>
+            <input id="maxKb" type="number" value="512" placeholder="Max KB" />
+          </div>
+          <input id="exclude" type="text" placeholder="Exclude: node_modules, dist..." />
         </div>
-
-        <label class="field">
-          <span>Exclude (comma-separated path contains)</span>
-          <input id="exclude" type="text" placeholder="node_modules, .next, dist, build, .git" />
-          <small>Used for tree + dump filtering.</small>
-        </label>
-      </div>
-
-      <div class="actions">
-        <button id="btnLoad" class="btn primary" type="button">Load Repo</button>
-        <button id="btnDump" class="btn" type="button" disabled>Dump All (AI-ready)</button>
-        <button id="btnCopyDump" class="btn" type="button" disabled>Copy Dump</button>
-        <button id="btnDownloadDump" class="btn" type="button" disabled>Download .txt</button>
-      </div>
-
-      <div class="status">
-        <div class="pill" id="statusPill">Idle</div>
-        <div class="progress">
-          <div class="bar" id="progressBar" style="width:0%"></div>
+        <button id="btnLoad" class="btn primary full-width">Connect & Load Tree</button>
+        
+        <div class="status-box">
+          <div class="status-header">
+            <span class="pill" id="statusPill">Idle</span>
+            <span id="statusText">Ready to start</span>
+          </div>
+          <div class="progress"><div class="bar" id="progressBar"></div></div>
         </div>
-        <div class="muted" id="statusText">Paste a token and repo URL, then tap “Load Repo”.</div>
       </div>
     </section>
 
-    <section class="split">
-      <section class="card pane">
+    <section id="view-explorer" class="view-section">
+      <div class="explorer-layout">
+        <div class="pane-meta" id="repoMeta"></div>
+        <div class="search-bar">
+          <input id="treeSearch" type="text" placeholder="Search files..." />
+        </div>
+        <div id="tree" class="tree-container"></div>
+        
+        <div class="file-preview-overlay" id="filePreview">
+          <div class="preview-header">
+            <span id="activePath">Select a file</span>
+            <button id="btnCopyFile" class="btn-icon">📋</button>
+            <button id="btnClosePreview" class="btn-icon">✕</button>
+          </div>
+          <pre class="code"><code id="fileContent"></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-output" class="view-section">
+      <div class="card full-height">
         <div class="pane-head">
-          <h2>Tree</h2>
-          <div class="pane-actions">
-            <input id="treeSearch" class="search" placeholder="Search paths…" />
-            <button id="btnCopyTree" class="btn ghost" type="button" disabled>Copy tree</button>
+          <h2>AI-Ready Dump</h2>
+          <div class="actions-mini">
+            <button id="btnCopyDump" class="btn sm" disabled>Copy</button>
+            <button id="btnDownloadDump" class="btn sm" disabled>Save</button>
           </div>
         </div>
-        <div id="repoMeta" class="meta"></div>
-        <div id="tree" class="tree"></div>
-      </section>
-
-      <section class="card pane">
-        <div class="pane-head">
-          <h2>File</h2>
-          <div class="pane-actions">
-            <div class="path" id="activePath">No file selected</div>
-            <button id="btnCopyFile" class="btn ghost" type="button" disabled>Copy file</button>
-          </div>
-        </div>
-        <pre class="code"><code id="fileContent" class="code-inner"></code></pre>
-      </section>
+        <textarea id="dumpOut" class="dump-area" readonly placeholder="Your dump will appear here..."></textarea>
+      </div>
     </section>
-
-    <section class="card">
-      <h2>Dump Output</h2>
-      <p class="muted">This is the “single giant text” you can paste into an AI to keep building the project.</p>
-      <textarea id="dumpOut" class="dump" placeholder="Click “Dump All (AI-ready)” after loading a repo…"></textarea>
-    </section>
-
-    <footer class="foot muted">
-      <div>Runs entirely in your browser. Uses GitHub REST API (trees + blobs).</div>
-      <div>Tip: If you hit rate limits, reduce dump size or use a fresh token.</div>
-    </footer>
   </main>
+
+  <button id="btnDump" class="fab" title="Generate Dump" disabled>
+    <span>+</span>
+  </button>
 
   <script src="./app.js"></script>
 </body>
