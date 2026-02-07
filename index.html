@@ -17,7 +17,7 @@
         <div class="subtitle" id="displayBranchName">Ready to connect</div>
       </div>
     </div>
-    <button id="btnTheme" class="btn-icon" aria-label="Toggle theme">🌗</button>
+    <button id="btnTheme" class="btn-icon">🌗</button>
   </header>
 
   <nav class="bottom-nav">
@@ -31,35 +31,19 @@
       <div class="card">
         <h3>Repository Access</h3>
         <div class="grid">
-          <div class="field">
-            <span>GitHub Token (Optional for Public)</span>
-            <input id="token" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" />
-          </div>
-          <div class="field">
-            <span>Repo URL or path</span>
-            <input id="repoUrl" type="url" placeholder="owner/repo" />
-          </div>
+          <input id="token" type="password" placeholder="GitHub Token (PAT)" />
+          <input id="repoUrl" type="url" placeholder="owner/repo" />
           <div class="row">
-            <div class="field">
-              <span>Branch</span>
-              <select id="branch"><option value="">Default</option></select>
-            </div>
-            <div class="field">
-              <span>Limit (KB)</span>
-              <input id="maxKb" type="number" value="512" />
-            </div>
+            <select id="branch"><option value="">Default Branch</option></select>
+            <input id="maxKb" type="number" value="512" placeholder="KB Limit" />
           </div>
-          <div class="field">
-            <span>Exclude (csv)</span>
-            <input id="exclude" type="text" placeholder="node_modules, .git, dist" />
-          </div>
+          <input id="exclude" type="text" placeholder="Exclude: node_modules, dist, .git" />
         </div>
-        <button id="btnLoad" class="btn primary full-width">Connect & Fetch Tree</button>
-        
+        <button id="btnLoad" class="btn primary full-width">Connect & Load</button>
         <div class="status-box">
           <div class="status-header">
             <span class="pill" id="statusPill">Idle</span>
-            <span id="statusText" class="muted">Awaiting input...</span>
+            <span id="statusText">Awaiting input...</span>
           </div>
           <div class="progress"><div class="bar" id="progressBar"></div></div>
         </div>
@@ -68,36 +52,33 @@
 
     <section id="view-explorer" class="view-section">
       <div class="explorer-container">
-        <div id="repoMeta" class="meta-strip"></div>
-        <input id="treeSearch" class="search-input" type="text" placeholder="Search files in tree..." />
+        <input id="treeSearch" class="search-input" type="text" placeholder="Search files..." />
         <div id="tree" class="tree-view"></div>
       </div>
-
       <div class="file-overlay" id="filePreview">
         <div class="preview-header">
           <button id="btnClosePreview" class="btn-icon">✕</button>
-          <span id="activePath">Select a file</span>
-          <button id="btnCopyFile" class="btn-icon" disabled>📋</button>
+          <span id="activePath">File Preview</span>
+          <button id="btnCopyFile" class="btn-icon">📋</button>
         </div>
         <pre class="code-block"><code id="fileContent"></code></pre>
       </div>
     </section>
 
     <section id="view-output" class="view-section">
-      <div class="output-header">
-        <h3>AI-Ready Content</h3>
-        <div class="mini-actions">
-          <button id="btnCopyDump" class="btn sm" disabled>Copy All</button>
-          <button id="btnDownloadDump" class="btn sm" disabled>Save .txt</button>
+      <div class="output-card">
+        <div class="output-header">
+          <h3>Full AI Dump</h3>
+          <button id="btnCopyDump" class="btn primary sm" disabled>Copy All Content</button>
         </div>
+        <textarea id="dumpOut" class="dump-area" readonly placeholder="Output will appear here..."></textarea>
       </div>
-      <textarea id="dumpOut" class="dump-area" readonly placeholder="The full repo dump will generate here..."></textarea>
     </section>
   </main>
 
-  <button id="btnDump" class="fab" title="Generate Dump" disabled>
-    <span class="fab-icon">⚡</span>
-  </button>
+  <button id="btnDump" class="fab" disabled><span class="fab-icon">⚡</span></button>
+
+  <div id="toast" class="toast">Copied to clipboard!</div>
 
   <script src="./app.js"></script>
 </body>
