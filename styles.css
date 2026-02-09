@@ -1,30 +1,113 @@
-/* Token Pill in Header */
+:root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --text-primary: #ffffff;
+    --text-secondary: #8e8e93;
+    --separator: #38383a;
+    --blue: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --nav-glass: rgba(28, 28, 30, 0.85);
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+    margin: 0; background: var(--bg); color: var(--text-primary);
+    font-family: -apple-system, system-ui, sans-serif;
+    height: 100dvh; overflow: hidden;
+}
+
+/* --- HEADER --- */
+.ios-header {
+    height: calc(55px + var(--safe-top)); padding-top: var(--safe-top);
+    padding-left: 20px; padding-right: 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); border-bottom: 1px solid var(--separator);
+    z-index: 100; position: relative;
+}
+#headerTitle { font-weight: 800; font-size: 1.2rem; }
 .token-pill {
-    background: rgba(48, 209, 88, 0.2);
-    color: #30d158;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    margin-left: 10px;
-    font-weight: 600;
+    background: rgba(48, 209, 88, 0.15); color: var(--green);
+    padding: 3px 10px; border-radius: 12px; font-size: 0.7rem;
+    font-weight: 700; margin-left: 10px;
 }
 
-/* Search Bar */
-.search-container { padding: 10px 0; position: sticky; top: 0; background: var(--bg); z-index: 5; }
+/* --- VIEWS --- */
+main { height: 100%; position: relative; }
+.view {
+    position: absolute; inset: 0; padding: 15px 15px 120px;
+    overflow-y: auto; opacity: 0; pointer-events: none;
+    transform: translateY(10px); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.view.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+/* --- SEARCH & CONTROLS --- */
+.search-container { position: sticky; top: -15px; background: var(--bg); z-index: 10; padding: 10px 0; }
 .ios-search-input {
-    width: 100%; background: #2c2c2e; border: none; border-radius: 10px;
-    padding: 10px 15px; color: white; font-size: 0.9rem;
+    width: 100%; background: #2c2c2e; border: none; border-radius: 12px;
+    padding: 12px 16px; color: white; font-size: 1rem;
 }
+.explorer-controls { margin: 10px 0; }
+.filter-bar { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary); }
+.btn-tiny { background: #2c2c2e; border: none; color: var(--blue); padding: 6px 12px; border-radius: 8px; font-weight: 600; margin-left: 5px; }
 
-/* Select Styling */
-.ios-select {
-    width: 100%; background: transparent; border: none; color: var(--blue);
-    font-size: 1rem; appearance: none; text-align: right;
+/* --- REPO & FILE LISTS --- */
+.ios-list-group { background: var(--card); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+.ios-list-header { font-size: 0.75rem; color: var(--text-secondary); margin: 0 0 8px 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ios-input-row, .ios-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 0.5px solid var(--separator);
 }
+.ios-input-row input, .ios-select { background: transparent; border: none; color: var(--blue); font-size: 1rem; text-align: right; outline: none; }
+.ios-select { appearance: none; padding-right: 5px; }
 
-/* Folder Header Styling */
-.folder-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 5px; margin-top: 10px; border-bottom: 1px solid var(--separator);
-    font-size: 0.8rem; font-weight: bold; color: var(--text-secondary);
+.repo-item {
+    background: var(--card); padding: 16px; display: flex; justify-content: space-between;
+    align-items: center; border-bottom: 0.5px solid var(--separator);
 }
+.repo-item.selected { background: rgba(10, 132, 255, 0.1); }
+.repo-name { font-weight: 700; display: block; }
+.check-icon { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--separator); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.selected .check-icon { background: var(--blue); border-color: var(--blue); }
+.selected .check-icon::after { content: '✓'; color: white; font-size: 12px; font-weight: 900; }
+
+.tree-item { display: flex; align-items: center; padding: 12px 5px; border-bottom: 0.5px solid #222; font-family: monospace; font-size: 0.85rem; }
+.tree-checkbox { width: 18px; height: 18px; border: 2px solid var(--text-secondary); border-radius: 4px; margin-right: 12px; }
+.tree-checkbox.checked { background: var(--blue); border-color: var(--blue); }
+
+.repo-group-header { background: #2c2c2e; padding: 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; margin: 15px 0 5px; color: var(--text-secondary); }
+
+/* --- ACTIONS --- */
+.ios-btn-primary {
+    width: 100%; background: var(--blue); color: white; border: none; padding: 18px;
+    border-radius: 16px; font-weight: 700; font-size: 1rem;
+}
+.ios-btn-primary:disabled { opacity: 0.4; }
+.output-container { position: relative; height: 350px; margin-top: 20px; }
+textarea { width: 100%; height: 100%; background: #000; border: 1px solid var(--separator); border-radius: 12px; color: #30d158; padding: 15px; font-family: monospace; font-size: 0.8rem; resize: none; }
+.floating-fab { position: absolute; bottom: 15px; right: 15px; background: white; color: black; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 700; }
+
+/* --- TAB BAR --- */
+.ios-tab-bar {
+    position: fixed; bottom: 0; width: 100%; height: calc(65px + var(--safe-bottom));
+    background: var(--nav-glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+    border-top: 0.5px solid var(--separator); display: flex; padding-bottom: var(--safe-bottom);
+}
+.tab-btn { flex: 1; border: none; background: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tab-btn.active { color: var(--blue); }
+.tab-btn .icon { font-size: 1.5rem; }
+.tab-btn .label { font-size: 0.65rem; font-weight: 600; margin-top: 2px; }
+
+/* --- TOAST --- */
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(50,50,50,0.9); padding: 16px 32px; border-radius: 30px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; }
+.toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+.toggle-switch { width: 51px; height: 31px; position: relative; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background-color: #39393d; border-radius: 34px; transition: .4s; }
+.slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; border-radius: 50%; transition: .4s; box-shadow: 0 3px 8px rgba(0,0,0,0.15); }
+input:checked + .slider { background-color: var(--green); }
+input:checked + .slider:before { transform: translateX(20px); }
