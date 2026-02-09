@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>RepoDumper Ultra</title>
+    <title>RepoDumper Ultra Pro</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
@@ -14,65 +13,59 @@
     <header class="ios-header">
         <div class="header-left">
             <span id="headerTitle">Dashboard</span>
+            <small id="tokenCounter" class="token-pill">0 tokens</small>
         </div>
         <div class="header-right">
-            <div id="statusIndicator" class="status-dot"></div>
+            <button id="btnReset" class="btn-text">Reset</button>
         </div>
     </header>
 
     <main id="app">
-        
         <section id="view-dashboard" class="view active">
             <div class="ios-list-group">
-                <div class="ios-list-header">ACCESS</div>
+                <div class="ios-list-header">AUTH</div>
                 <div class="ios-input-row">
-                    <label>Token</label>
-                    <input type="password" id="githubToken" placeholder="ghp_..." autocomplete="off">
+                    <input type="password" id="githubToken" placeholder="GitHub Token">
                     <button id="btnAuth" class="btn-text">Save</button>
                 </div>
             </div>
 
-            <div class="ios-list-header">REPOSITORY SOURCE</div>
-            
-            <div class="ios-list-group">
-                <div class="ios-input-row">
-                    <input type="text" id="manualRepoInput" placeholder="owner/repo (e.g. facebook/react)">
-                    <button id="btnFetchManual" class="btn-icon">➜</button>
-                </div>
+            <div class="sticky-controls">
+                <button id="btnLoadSelected" class="ios-btn-primary" disabled>Select Repos</button>
             </div>
 
-            <div class="ios-list-header" id="repoListHeader">YOUR REPOSITORIES</div>
-            <div id="repoList" class="repo-scroll-list">
-                <div class="empty-state">Enter a token to load your repos.</div>
-            </div>
+            <div id="repoList" class="repo-scroll-list"></div>
         </section>
 
         <section id="view-explorer" class="view">
-            <div class="explorer-controls">
-                <button id="btnBackToDash" class="btn-back">❮ Repos</button>
-                <div class="filter-bar">
-                    <span id="selectedCount">0 files</span>
-                    <button id="btnSelectAll" class="btn-tiny">All</button>
-                    <button id="btnSelectNone" class="btn-tiny">None</button>
-                </div>
+            <div class="search-container">
+                <input type="text" id="treeSearch" placeholder="Search files or folders..." class="ios-search-input">
             </div>
-            
-            <div id="fileTree" class="file-tree-container">
-                </div>
+            <div class="explorer-controls">
+                <button id="btnSelectAll" class="btn-tiny">All</button>
+                <button id="btnSelectNone" class="btn-tiny">None</button>
+                <span id="selectedCount" class="count-label">0 selected</span>
+            </div>
+            <div id="fileTree" class="file-tree-container"></div>
         </section>
 
         <section id="view-compiler" class="view">
             <div class="ios-list-group">
-                <div class="ios-list-header">EXPORT SETTINGS</div>
-                <div class="ios-toggle-row">
-                    <span>XML Wrapping (Better for AI)</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="optXml" checked>
-                        <span class="slider"></span>
-                    </label>
+                <div class="ios-list-header">AI PROMPT TEMPLATE</div>
+                <div class="ios-input-row">
+                    <select id="promptTemplate" class="ios-select">
+                        <option value="default">Raw Code Dump</option>
+                        <option value="debug">Bug Fix / Debugging</option>
+                        <option value="feature">Add New Feature</option>
+                        <option value="refactor">Refactor / Optimize</option>
+                    </select>
                 </div>
+            </div>
+
+            <div class="ios-list-group">
+                <div class="ios-list-header">SETTINGS</div>
                 <div class="ios-toggle-row">
-                    <span>Remove Imports/Requires</span>
+                    <span>Clean Code (No Imports)</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="optClean">
                         <span class="slider"></span>
@@ -80,34 +73,22 @@
                 </div>
             </div>
 
-            <div class="action-area">
-                <button id="btnCompile" class="ios-btn-primary">Generate Payload</button>
-            </div>
+            <button id="btnCompile" class="ios-btn-primary">Generate for AI</button>
 
             <div class="output-container">
-                <textarea id="outputArea" readonly placeholder="Payload will appear here..."></textarea>
-                <button id="btnCopy" class="floating-fab">Copy</button>
+                <textarea id="outputArea" readonly></textarea>
+                <button id="btnCopy" class="floating-fab">Copy All</button>
             </div>
         </section>
     </main>
 
     <nav class="ios-tab-bar">
-        <button class="tab-btn active" data-target="view-dashboard">
-            <span class="icon">☁️</span>
-            <span class="label">Source</span>
-        </button>
-        <button class="tab-btn" data-target="view-explorer" id="tabExplorer" disabled>
-            <span class="icon">📂</span>
-            <span class="label">Files</span>
-        </button>
-        <button class="tab-btn" data-target="view-compiler">
-            <span class="icon">⚡</span>
-            <span class="label">Export</span>
-        </button>
+        <button class="tab-btn active" data-target="view-dashboard"><span>☁️</span><label>Repos</label></button>
+        <button class="tab-btn" data-target="view-explorer" id="tabExplorer" disabled><span>📂</span><label>Files</label></button>
+        <button class="tab-btn" data-target="view-compiler"><span>⚡</span><label>Export</label></button>
     </nav>
 
-    <div id="toast" class="toast">Action Complete</div>
-
+    <div id="toast" class="toast">Copied!</div>
     <script src="app.js"></script>
 </body>
 </html>
