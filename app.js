@@ -5,23 +5,23 @@ const App = {
     filesMap: {},
     selectedFiles: new Set(),
 
-    async api(path, isFull = false) {
-        const headers = { 'Accept': 'application/vnd.github.v3+json' };
-        if (this.token) headers['Authorization'] = `token ${this.token}`;
-        const res = await fetch(isFull ? path : `https://api.github.com/${path}`, { headers });
-        if (!res.ok) throw new Error("API Connection Failed");
-        return res.json();
-    },
-
     init() {
         if (this.token) {
             document.getElementById('githubToken').value = this.token;
             this.syncRepos();
         }
-        this.bindEvents();
+        this.bind();
     },
 
-    bindEvents() {
+    async api(path) {
+        const headers = { 'Accept': 'application/vnd.github.v3+json' };
+        if (this.token) headers['Authorization'] = `token ${this.token}`;
+        const res = await fetch(`https://api.github.com/${path}`, { headers });
+        if (!res.ok) throw new Error("Sync Failed");
+        return res.json();
+    },
+
+    bind() {
         document.querySelectorAll('.tab-btn').forEach(b => {
             b.onclick = () => !b.disabled && this.showView(b.dataset.target);
         });
@@ -32,13 +32,13 @@ const App = {
             this.syncRepos();
         };
 
-        document.getElementById('btnLoadSelected').onclick = () => this.loadTrees();
+        document.getElementById('btnLoadSelected').onclick = () => this.loadFiles();
         document.getElementById('btnSelectAll').onclick = () => this.bulkFiles(true);
         document.getElementById('btnSelectNone').onclick = () => this.bulkFiles(false);
         document.getElementById('treeSearch').oninput = (e) => this.filterTree(e.target.value);
         document.getElementById('btnCompile').onclick = () => this.generate();
         document.getElementById('btnCopy').onclick = () => this.copy();
-        document.getElementById('btnReset').onclick = () => { if(confirm("Clear application state?")) location.reload(); };
+        document.getElementById('btnReset').onclick = () => { if(confirm("Reset all data?")) { localStorage.clear(); location.reload(); }};
     },
 
     showView(id) {
@@ -50,29 +50,29 @@ const App = {
 
     async syncRepos() {
         const list = document.getElementById('repoList');
+        list.innerHTML = `<div class="ios-status-card">Connecting...</div>`;
         try {
             this.repos = await this.api('user/repos?sort=updated&per_page=100');
             list.innerHTML = this.repos.map(r => `
-                <div class="repo-item" onclick="App.toggleRepo('${r.full_name}', this)">
+                <div class="repo-card ${this.selectedRepos.has(r.full_name) ? 'selected' : ''}" onclick="App.toggleRepo('${r.full_name}', this)">
                     <span>${r.name}</span>
-                    <div class="checkbox ${this.selectedRepos.has(r.full_name) ? 'checked' : ''}"></div>
+                    <div class="ios-check"></div>
                 </div>
             `).join('');
-        } catch (e) { list.innerHTML = `<div class="status-msg">${e.message}</div>`; }
+        } catch (e) { list.innerHTML = `<div class="ios-status-card">${e.message}</div>`; }
     },
 
     toggleRepo(name, el) {
         if (this.selectedRepos.has(name)) this.selectedRepos.delete(name);
         else this.selectedRepos.add(name);
-        el.querySelector('.checkbox').classList.toggle('checked');
-        const btn = document.getElementById('btnLoadSelected');
-        btn.disabled = this.selectedRepos.size === 0;
-        btn.innerText = `Load ${this.selectedRepos.size} Repositories`;
+        el.classList.toggle('selected');
+        document.getElementById('btnLoadSelected').disabled = this.selectedRepos.size === 0;
+        document.getElementById('btnLoadSelected').innerText = `Load ${this.selectedRepos.size} Projects`;
     },
 
-    async loadTrees() {
+    async loadFiles() {
         const btn = document.getElementById('btnLoadSelected');
-        btn.innerText = "Syncing...";
+        btn.innerText = "Indexing Trees...";
         this.filesMap = {};
         this.selectedFiles.clear();
 
@@ -85,19 +85,19 @@ const App = {
             this.renderTree();
             document.getElementById('tabExplorer').disabled = false;
             this.showView('view-explorer');
-        } catch (e) { alert(e.message); }
-        btn.innerText = `Load ${this.selectedRepos.size} Repositories`;
+        } catch (e) { alert("Rate limit or error: " + e.message); }
+        btn.innerText = `Load ${this.selectedRepos.size} Projects`;
     },
 
     renderTree() {
         const container = document.getElementById('fileTree');
         container.innerHTML = Object.keys(this.filesMap).map(repo => `
-            <div class="list-header" style="margin-top:20px">${repo}</div>
+            <div class="ios-group-label" style="margin-top:20px">${repo}</div>
             ${this.filesMap[repo].map(f => {
                 const key = `${repo}|${f.path}`;
-                return `<div class="tree-item" onclick="App.toggleFile('${key}', this)">
-                    <div class="checkbox ${this.selectedFiles.has(key) ? 'checked' : ''}"></div>
-                    <span class="tree-label">${f.path}</span>
+                return `<div class="file-card ${this.selectedFiles.has(key) ? 'selected' : ''}" onclick="App.toggleFile('${key}', this)">
+                    <span style="font-size: 0.85rem; font-family: monospace;">${f.path}</span>
+                    <div class="ios-check"></div>
                 </div>`;
             }).join('')}
         `).join('');
@@ -107,13 +107,13 @@ const App = {
     toggleFile(key, el) {
         if (this.selectedFiles.has(key)) this.selectedFiles.delete(key);
         else this.selectedFiles.add(key);
-        el.querySelector('.checkbox').classList.toggle('checked');
+        el.classList.toggle('selected');
         this.updateStats();
     },
 
     filterTree(q) {
         const val = q.toLowerCase();
-        document.querySelectorAll('.tree-item').forEach(el => {
+        document.querySelectorAll('.file-card').forEach(el => {
             el.style.display = el.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
         });
     },
@@ -124,11 +124,10 @@ const App = {
             const [r, p] = k.split('|');
             size += (this.filesMap[r].find(f => f.path === p).size || 0);
         });
-        const tokens = Math.ceil(size / 4);
-        const badge = document.getElementById('tokenBadge');
-        badge.innerText = `${tokens.toLocaleString()} Tokens`;
-        badge.classList.remove('badge-hidden');
-        document.getElementById('selectedCount').innerText = `${this.selectedFiles.size} Selected`;
+        const pill = document.getElementById('tokenPill');
+        pill.innerText = `${Math.ceil(size / 4).toLocaleString()} Tokens`;
+        pill.classList.remove('hidden');
+        document.getElementById('selectedCount').innerText = `${this.selectedFiles.size} Files Selected`;
     },
 
     bulkFiles(val) {
@@ -139,29 +138,29 @@ const App = {
 
     async generate() {
         const out = document.getElementById('outputArea');
-        out.value = "Processing code...";
+        out.value = "Compiling codebase...";
         this.showView('view-compiler');
         
-        const useXml = document.getElementById('optXml').checked;
+        const xml = document.getElementById('optXml').checked;
         const clean = document.getElementById('optClean').checked;
-        let payload = "";
+        let res = "";
 
         for (const key of Array.from(this.selectedFiles)) {
             const [repo, path] = key.split('|');
             const node = this.filesMap[repo].find(f => f.path === path);
             try {
                 const data = await this.api(`repos/${repo}/git/blobs/${node.sha}`);
-                let content = new TextDecoder().decode(Uint8Array.from(atob(data.content), c => c.charCodeAt(0)));
-                if (clean) content = content.split('\n').filter(l => !l.trim().startsWith('import ') && !l.trim().startsWith('require(')).join('\n');
-                
-                payload += useXml ? `<file path="${path}" repo="${repo}">\n${content}\n</file>\n` : `\n// Repo: ${repo} | Path: ${path}\n${content}\n`;
-            } catch (e) { payload += `\n// Error loading ${path}\n`; }
+                let code = new TextDecoder().decode(Uint8Array.from(atob(data.content), c => c.charCodeAt(0)));
+                if (clean) code = code.split('\n').filter(l => !l.trim().startsWith('import ') && !l.trim().startsWith('require(')).join('\n');
+                res += xml ? `<file path="${path}" repo="${repo}">\n${code}\n</file>\n` : `\n// ${repo} > ${path}\n${code}\n`;
+            } catch (e) { res += `\n// Error: ${path}\n`; }
         }
-        out.value = payload;
+        out.value = res;
     },
 
     copy() {
         navigator.clipboard.writeText(document.getElementById('outputArea').value);
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
         const t = document.getElementById('toast');
         t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2000);
