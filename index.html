@@ -10,87 +10,93 @@
 </head>
 <body>
 
-    <div class="app-shell">
-        <header class="system-header">
-            <div class="header-content">
-                <h1 id="viewTitle">Sources</h1>
-                <div id="tokenBadge" class="badge badge-hidden">0 Tokens</div>
+    <div class="app-container">
+        <header class="ios-nav-header">
+            <div class="header-top">
+                <span id="headerTitle">Dashboard</span>
+                <button id="btnReset" class="ios-link">Clear</button>
             </div>
-            <button id="btnReset" class="btn-ghost">Clear</button>
+            <div id="tokenPill" class="ios-pill pill-green hidden">0 Tokens</div>
         </header>
 
-        <main id="app">
+        <main id="view-wrapper">
             <section id="view-dashboard" class="view active">
-                <div class="content-block">
-                    <div class="list-group">
-                        <div class="list-header">GitHub Access</div>
-                        <div class="input-row">
-                            <input type="password" id="githubToken" placeholder="Personal Access Token" autocomplete="off">
-                            <button id="btnAuth" class="btn-action">Sync</button>
-                        </div>
+                <div class="ios-group">
+                    <div class="ios-row">
+                        <label>Access Token</label>
+                        <input type="password" id="githubToken" placeholder="Required" autocomplete="off">
+                        <button id="btnAuth" class="ios-btn-inline">Sync</button>
                     </div>
+                </div>
 
-                    <div class="action-dock">
-                        <button id="btnLoadSelected" class="btn-primary" disabled>Select Repositories</button>
-                        <p class="status-msg" id="repoStatus">Authentication required.</p>
-                    </div>
+                <div class="ios-group-label">REPOSITORIES</div>
+                <div id="repoList" class="ios-list">
+                    <div class="ios-empty">Sync to load projects</div>
+                </div>
 
-                    <div id="repoList" class="item-list"></div>
+                <div class="ios-action-bar">
+                    <button id="btnLoadSelected" class="ios-btn-main" disabled>Select Projects</button>
                 </div>
             </section>
 
             <section id="view-explorer" class="view">
-                <div class="content-block">
-                    <div class="search-bar">
-                        <input type="text" id="treeSearch" placeholder="Filter files..." class="input-field">
-                    </div>
-                    <div class="control-row">
-                        <span id="selectedCount">0 selected</span>
-                        <div class="btn-group">
-                            <button id="btnSelectAll" class="btn-secondary">All</button>
-                            <button id="btnSelectNone" class="btn-secondary">None</button>
-                        </div>
-                    </div>
-                    <div id="fileTree" class="tree-container"></div>
+                <div class="ios-search-container">
+                    <input type="text" id="treeSearch" placeholder="Search Files..." class="ios-search-input">
                 </div>
+                
+                <div class="ios-filter-row">
+                    <span id="selectedCount">0 Selected</span>
+                    <div class="ios-seg-control">
+                        <button id="btnSelectAll">All</button>
+                        <button id="btnSelectNone">None</button>
+                    </div>
+                </div>
+
+                <div id="fileTree" class="ios-tree-list"></div>
             </section>
 
             <section id="view-compiler" class="view">
-                <div class="content-block">
-                    <div class="list-group">
-                        <div class="list-header">Processing</div>
-                        <div class="toggle-row">
-                            <span>XML Tags</span>
-                            <label class="switch">
-                                <input type="checkbox" id="optXml" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-row">
-                            <span>Strip Imports</span>
-                            <label class="switch">
-                                <input type="checkbox" id="optClean">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
+                <div class="ios-group">
+                    <div class="ios-row-toggle">
+                        <span>XML Tag Formatting</span>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="optXml" checked>
+                            <span class="ios-slider"></span>
+                        </label>
                     </div>
-                    <button id="btnCompile" class="btn-primary">Generate Payload</button>
-                    <div class="output-wrapper">
-                        <textarea id="outputArea" readonly placeholder="Output..."></textarea>
-                        <button id="btnCopy" class="btn-fab">Copy</button>
+                    <div class="ios-row-toggle">
+                        <span>Clean Imports</span>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="optClean">
+                            <span class="ios-slider"></span>
+                        </label>
                     </div>
+                </div>
+
+                <button id="btnCompile" class="ios-btn-main">Generate AI Payload</button>
+
+                <div class="ios-editor-container">
+                    <textarea id="outputArea" spellcheck="false" placeholder="Waiting for code..."></textarea>
+                    <button id="btnCopy" class="ios-fab">Copy</button>
                 </div>
             </section>
         </main>
 
-        <nav class="tab-bar">
-            <button class="tab-btn active" data-target="view-dashboard">Sources</button>
-            <button class="tab-btn" data-target="view-explorer" id="tabExplorer" disabled>Explorer</button>
-            <button class="tab-btn" data-target="view-compiler">Export</button>
+        <nav class="ios-tab-bar">
+            <button class="tab-btn active" data-target="view-dashboard">
+                <i class="icon-repos"></i><span>Sources</span>
+            </button>
+            <button class="tab-btn" data-target="view-explorer" id="tabExplorer" disabled>
+                <i class="icon-files"></i><span>Explorer</span>
+            </button>
+            <button class="tab-btn" data-target="view-compiler">
+                <i class="icon-export"></i><span>Export</span>
+            </button>
         </nav>
     </div>
 
-    <div id="toast" class="toast-popup">Copied</div>
+    <div id="toast" class="ios-toast">Copied</div>
+
     <script src="app.js"></script>
 </body>
 </html>
