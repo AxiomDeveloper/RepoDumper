@@ -2,121 +2,111 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RepoDumper Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RepoDumper Ultra</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
-<body data-view="config">
-    <header class="glass-header">
-        <div class="header-inner">
-            <div class="logo-group">
-                <span class="logo-icon">⚡</span>
-                <div>
-                    <h1 id="displayRepoName">RepoDumper</h1>
-                    <p id="displayBranchName">Not Connected</p>
-                </div>
-            </div>
-            <button id="btnTheme" class="icon-btn">🌗</button>
+<body>
+
+    <header class="ios-header">
+        <div class="header-left">
+            <span id="headerTitle">Dashboard</span>
+        </div>
+        <div class="header-right">
+            <div id="statusIndicator" class="status-dot"></div>
         </div>
     </header>
 
-    <main class="app-container">
-        <section id="view-config" class="view">
-            <div class="glass-card">
-                <label class="native-label">Authentication</label>
-                <input id="token" type="password" placeholder="GitHub Token (Optional)" class="native-input">
-                
-                <label class="native-label">Target Repository</label>
-                <input id="repoUrl" type="url" placeholder="owner/repo" class="native-input">
-                
-                <div class="input-row">
-                    <div class="input-half">
-                        <label class="native-label">Branch</label>
-                        <select id="branch" class="native-select">
-                            <option value="">Default</option>
-                        </select>
-                    </div>
-                    <div class="input-half">
-                        <label class="native-label">Limit (KB)</label>
-                        <input id="maxKb" type="number" value="512" class="native-input">
-                    </div>
+    <main id="app">
+        
+        <section id="view-dashboard" class="view active">
+            <div class="ios-list-group">
+                <div class="ios-list-header">ACCESS</div>
+                <div class="ios-input-row">
+                    <label>Token</label>
+                    <input type="password" id="githubToken" placeholder="ghp_..." autocomplete="off">
+                    <button id="btnAuth" class="btn-text">Save</button>
                 </div>
+            </div>
 
-                <label class="native-label">Exclusions</label>
-                <input id="exclude" type="text" value="node_modules, .git, dist, .png, .jpg" class="native-input">
-
-                <button id="btnLoad" class="btn-primary">Fetch Repository</button>
-                
-                <div class="status-glass">
-                    <div class="status-text-row">
-                        <span id="statusPill" class="pill">Idle</span>
-                        <span id="statusText">Awaiting input...</span>
-                    </div>
-                    <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
+            <div class="ios-list-header">REPOSITORY SOURCE</div>
+            
+            <div class="ios-list-group">
+                <div class="ios-input-row">
+                    <input type="text" id="manualRepoInput" placeholder="owner/repo (e.g. facebook/react)">
+                    <button id="btnFetchManual" class="btn-icon">➜</button>
                 </div>
+            </div>
+
+            <div class="ios-list-header" id="repoListHeader">YOUR REPOSITORIES</div>
+            <div id="repoList" class="repo-scroll-list">
+                <div class="empty-state">Enter a token to load your repos.</div>
             </div>
         </section>
 
         <section id="view-explorer" class="view">
-            <div class="explorer-tools">
-                <input id="treeSearch" type="text" placeholder="Search files..." class="glass-search">
-                <button id="btnCopyTree" class="btn-sm">Copy Tree</button>
+            <div class="explorer-controls">
+                <button id="btnBackToDash" class="btn-back">❮ Repos</button>
+                <div class="filter-bar">
+                    <span id="selectedCount">0 files</span>
+                    <button id="btnSelectAll" class="btn-tiny">All</button>
+                    <button id="btnSelectNone" class="btn-tiny">None</button>
+                </div>
             </div>
-            <div id="tree" class="native-tree"></div>
+            
+            <div id="fileTree" class="file-tree-container">
+                </div>
         </section>
 
-        <section id="view-output" class="view">
-            <div class="glass-card dump-compiler">
-                <h3>Compiler Settings</h3>
-                <p class="sub">Toggle items to include in the AI payload</p>
-                
-                <div class="toggle-list">
-                    <label class="native-toggle">
-                        <span>Include Repo Metadata</span>
-                        <input type="checkbox" id="optMeta" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <label class="native-toggle">
-                        <span>Include File Tree</span>
-                        <input type="checkbox" id="optTree" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <label class="native-toggle">
-                        <span>Include File Contents</span>
-                        <input type="checkbox" id="optFiles" checked>
+        <section id="view-compiler" class="view">
+            <div class="ios-list-group">
+                <div class="ios-list-header">EXPORT SETTINGS</div>
+                <div class="ios-toggle-row">
+                    <span>XML Wrapping (Better for AI)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="optXml" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
-
-                <button id="btnDump" class="btn-primary">Compile All for AI</button>
+                <div class="ios-toggle-row">
+                    <span>Remove Imports/Requires</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="optClean">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
 
-            <div class="output-wrapper glass">
-                <div class="output-header">
-                    <span>Generated Payload</span>
-                    <button id="btnCopyDump" class="btn-sm btn-accent">Copy All Content</button>
-                </div>
-                <textarea id="dumpOut" readonly placeholder="Output will appear here..."></textarea>
+            <div class="action-area">
+                <button id="btnCompile" class="ios-btn-primary">Generate Payload</button>
+            </div>
+
+            <div class="output-container">
+                <textarea id="outputArea" readonly placeholder="Payload will appear here..."></textarea>
+                <button id="btnCopy" class="floating-fab">Copy</button>
             </div>
         </section>
     </main>
 
-    <nav class="glass-nav">
-        <button class="nav-btn active" data-target="config"><i>⚙️</i><span>Setup</span></button>
-        <button class="nav-btn" data-target="explorer"><i>📂</i><span>Files</span></button>
-        <button class="nav-btn" data-target="output"><i>📄</i><span>Dump</span></button>
+    <nav class="ios-tab-bar">
+        <button class="tab-btn active" data-target="view-dashboard">
+            <span class="icon">☁️</span>
+            <span class="label">Source</span>
+        </button>
+        <button class="tab-btn" data-target="view-explorer" id="tabExplorer" disabled>
+            <span class="icon">📂</span>
+            <span class="label">Files</span>
+        </button>
+        <button class="tab-btn" data-target="view-compiler">
+            <span class="icon">⚡</span>
+            <span class="label">Export</span>
+        </button>
     </nav>
 
-    <div id="filePreview" class="drawer glass">
-        <div class="drawer-header">
-            <button id="btnClosePreview" class="icon-btn">✕</button>
-            <span id="activePath">Preview</span>
-            <button id="btnCopyFile" class="icon-btn">📋</button>
-        </div>
-        <pre><code id="fileContent"></code></pre>
-    </div>
-
-    <div id="toast" class="toast">Copied!</div>
+    <div id="toast" class="toast">Action Complete</div>
 
     <script src="app.js"></script>
 </body>
